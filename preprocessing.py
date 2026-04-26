@@ -145,12 +145,15 @@ def split(sequences: List[dict], train_ratio: float = 0.5,
     random.shuffle(normal)
     random.shuffle(anomaly)
 
-    n = int(len(normal)  * train_ratio)
-    a = int(len(anomaly) * train_ratio)
+    n_train = len(normal) // 2
+    train   = normal[:n_train]
+    normal_test = normal[n_train:]
 
     # Use first half of normals for training, rest go into test
-    train = normal[:n]
-    test  = normal[n:] + anomaly[a:]
+    n_test_each = len(normal_test)
+    anomaly_test = anomaly[:n_test_each]   # same count as normal in test
+
+    test = normal_test + anomaly_test
     random.shuffle(test)
 
     print(f"  Train (normal only): {len(train)}")

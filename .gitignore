@@ -1,5 +1,7 @@
 light-oauth2-logs
 light-oauth2-logs.zip
+checkpoints/
+checkpoints_logbert/
 
 # Python
 __pycache__/
