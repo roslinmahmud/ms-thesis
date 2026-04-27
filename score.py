@@ -41,21 +41,26 @@ def load_finetuned(service: str, rank: int = 16):
     return model, tokenizer
 
 @torch.no_grad()
-def perplexity(text: str, model, tokenizer) -> float:
-    """
-    Average cross-entropy loss over the sequence.
-    Normal logs → low loss (model knows what to expect).
-    Anomalous logs → high loss (model is surprised).
-    """
+def perplexity(text: str, model, tokenizer, max_len: int = 1024) -> float:
     enc = tokenizer(
         text,
         return_tensors="pt",
         truncation=True,
-        max_length=MAX_LEN,
+        max_length=max_len,
     ).to(model.device)
 
-    loss = model(**enc, labels=enc["input_ids"]).loss
-    return loss.item()
+    n_tokens = enc["input_ids"].shape[1]
+
+    # Raw loss from model (already mean over tokens internally)
+    outputs = model(**enc, labels=enc["input_ids"])
+    raw_loss = outputs.loss.item()
+
+    # Length penalty: penalise short sequences
+    # log(n_tokens) normalisation — standard in perplexity literature
+    length_penalty = np.log(max(n_tokens, 1))
+    normalised_loss = raw_loss / length_penalty
+
+    return normalised_loss
 
 def score_sequences(sequences: list, model, tokenizer) -> tuple:
     """Returns (scores array, labels array) for a list of sequences."""
