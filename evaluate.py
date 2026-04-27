@@ -5,14 +5,20 @@ from pathlib import Path
 
 def evaluate(scores: np.ndarray, labels: np.ndarray,
              model_name: str = "model", service: str = "") -> dict:
-    """
-    Follows LO2 paper protocol exactly:
-    - AUCROC = primary metric (threshold-free, fair for unsupervised)
-    - F1 reported at the threshold that maximises it (same as paper)
-    """
+
     if len(np.unique(labels)) < 2:
-        print(f"  [{service}] Only one class in test set — skipping.")
+        print(f"  [{service}] Only one class — skipping.")
         return {}
+
+    # ── Auto-correct score direction ──────────────────────────────────────────
+    # AUCROC < 0.5 means signal is inverted — flip and record it
+    raw_aucroc = roc_auc_score(labels, scores)
+    flipped = False
+    if raw_aucroc < 0.5:
+        scores  = -scores
+        flipped = True
+        print(f"  ⚠  [{model_name}] Inverted signal detected "
+              f"(raw={raw_aucroc:.4f}) — scores negated")
 
     aucroc = roc_auc_score(labels, scores)
 
@@ -26,17 +32,17 @@ def evaluate(scores: np.ndarray, labels: np.ndarray,
 
     print(f"  [{model_name} | {service}] "
           f"AUCROC={aucroc:.4f}  F1={best_f1:.4f}  "
-          f"thresh={best_t:.4f}  "
-          f"n_test={len(labels)}")
+          f"flipped={flipped}")
 
     return {
-        "service":    service,
-        "model":      model_name,
-        "aucroc":     round(aucroc, 4),
-        "f1":         round(best_f1, 4),
-        "threshold":  round(best_t, 4),
-        "n_test":     int(len(labels)),
-        "n_anomaly":  int(labels.sum()),
+        "service":   service,
+        "model":     model_name,
+        "aucroc":    round(aucroc, 4),
+        "f1":        round(best_f1, 4),
+        "threshold": round(float(best_t), 4),
+        "flipped":   flipped,          # log this for thesis transparency
+        "n_test":    int(len(labels)),
+        "n_anomaly": int(labels.sum()),
     }
 
 def save_results(all_results: list, path: str = "results.json"):
