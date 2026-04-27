@@ -6,7 +6,7 @@ from peft import PeftModel
 import os
 
 # Make sure MODEL_ID matches your training notebook!
-MODEL_ID = "google/gemma-2-2b"
+MODEL_ID = "meta-llama/Meta-Llama-3-8B"
 MAX_LEN   = 512
 CKPT_BASE = Path("./checkpoints")
 

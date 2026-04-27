@@ -13,7 +13,7 @@ from preprocessing import build_sequences, split, SERVICES
 set_seed(42)
 
 # ── Config — tweak these per experiment ───────────────────────────────────────
-MODEL_ID      = "google/gemma-2-2b"
+MODEL_ID      = "meta-llama/Meta-Llama-3-8B"
 CKPT_BASE     = Path("./checkpoints")
 MAX_LEN       = 512    # tokens; reduce to 512 or 256 if you hit OOM
 LORA_RANK     = 16     # ablate: 4, 8, 16, 32
