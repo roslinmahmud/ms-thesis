@@ -1,3 +1,4 @@
+# train.py
 import os, torch
 from pathlib import Path
 from transformers import (
@@ -15,7 +16,7 @@ set_seed(42)
 # ── Config — tweak these per experiment ───────────────────────────────────────
 MODEL_ID      = "meta-llama/Meta-Llama-3-8B"
 CKPT_BASE     = Path("./checkpoints")
-MAX_LEN       = 512    # tokens; reduce to 512 or 256 if you hit OOM
+MAX_LEN       = 1024   # tokens; reduce to 512 if you hit OOM
 LORA_RANK     = 16     # ablate: 4, 8, 16, 32
 LORA_ALPHA    = 32     # rule of thumb: 2 × rank
 EPOCHS        = 3
@@ -40,7 +41,7 @@ def load_base_model(model_id: str):
     model = AutoModelForCausalLM.from_pretrained(
         model_id,
         quantization_config=get_bnb_config(),
-        device_map={"": 0},
+        device_map="auto",
         torch_dtype=torch.bfloat16,
     )
     # Required step before attaching LoRA to a quantized model
@@ -138,7 +139,6 @@ def fine_tune(service: str, train_seqs: list, rank: int = LORA_RANK):
     torch.cuda.empty_cache()
 
     return ckpt_dir
-
 
 # ── Entry point ───────────────────────────────────────────────────────────────
 if __name__ == "__main__":

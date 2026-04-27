@@ -7,7 +7,7 @@ import os
 
 # Make sure MODEL_ID matches your training notebook!
 MODEL_ID = "meta-llama/Meta-Llama-3-8B"
-MAX_LEN   = 512
+MAX_LEN   = 1024
 CKPT_BASE = Path("./checkpoints")
 
 def load_finetuned(service: str, rank: int = 16):
@@ -31,7 +31,7 @@ def load_finetuned(service: str, rank: int = 16):
     base = AutoModelForCausalLM.from_pretrained(
         MODEL_ID,
         quantization_config=bnb_config,
-        device_map={"": 0},
+        device_map="auto",
         torch_dtype=torch.bfloat16,
     )
     
