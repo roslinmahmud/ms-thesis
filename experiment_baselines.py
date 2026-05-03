@@ -41,7 +41,7 @@ for service in SERVICES:
         print(f"  No sequences — skipping {service}.")
         continue
 
-    train_seqs, test_seqs = split(seqs, method="balanced")
+    train_seqs, test_seqs = split(seqs)
     print(f"  Built in {elapsed(t0)} | "
           f"train={len(train_seqs)} | test={len(test_seqs)}")
 
