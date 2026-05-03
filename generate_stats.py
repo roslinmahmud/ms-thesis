@@ -25,28 +25,25 @@ for service in SERVICES:
     train_seqs, test_seqs = split(seqs)
     all_seqs = train_seqs + test_seqs
 
-    # ── Token lengths ──────────────────────────────────────────────────────────
-    # Assumes each sequence object has a .tokens attribute (list of token ids or
-    # strings). Adjust the attribute name if yours differs (e.g. .token_ids).
-    lengths = [len(seq.tokens) for seq in all_seqs]
-    train_lengths = [len(seq.tokens) for seq in train_seqs]
+    # ── Word-level lengths ─────────────────────────────────────────────────────
+    lengths = [len(seq["text"].split()) for seq in all_seqs]
 
     # ── Vocabulary (training split only — no data leakage) ────────────────────
     vocab = set()
     for seq in train_seqs:
-        vocab.update(seq.tokens)
+        vocab.update(seq["text"].split())
 
     # ── Class counts ──────────────────────────────────────────────────────────
-    n_normal_train  = sum(1 for s in train_seqs if not s.is_anomaly)
-    n_anomaly_train = sum(1 for s in train_seqs if s.is_anomaly)
-    n_normal_test   = sum(1 for s in test_seqs  if not s.is_anomaly)
-    n_anomaly_test  = sum(1 for s in test_seqs  if s.is_anomaly)
+    n_normal_train  = sum(1 for s in train_seqs if s["label"] == 0)
+    n_anomaly_train = sum(1 for s in train_seqs if s["label"] == 1)
+    n_normal_test   = sum(1 for s in test_seqs  if s["label"] == 0)
+    n_anomaly_test  = sum(1 for s in test_seqs  if s["label"] == 1)
 
     # ── Per-error-type coverage ────────────────────────────────────────────────
     error_types = defaultdict(int)
     for seq in all_seqs:
-        if seq.is_anomaly:
-            error_types[seq.scenario] += 1
+        if seq["label"] == 1:
+            error_types[seq["scenario"]] += 1
 
     stats[service] = {
         "total_sequences":      len(all_seqs),
@@ -60,7 +57,7 @@ for service in SERVICES:
             "test_anomaly":     n_anomaly_test,
         },
 
-        "token_lengths": {
+        "word_lengths": {
             "mean":             round(float(np.mean(lengths)), 1),
             "median":           round(float(np.median(lengths)), 1),
             "std":              round(float(np.std(lengths)), 1),
@@ -76,9 +73,9 @@ for service in SERVICES:
     }
 
     print(f"  Sequences  — train: {len(train_seqs)}, test: {len(test_seqs)}")
-    print(f"  Lengths    — mean: {stats[service]['token_lengths']['mean']}, "
-          f"max: {stats[service]['token_lengths']['max']}, "
-          f"p99: {stats[service]['token_lengths']['p99']}")
+    print(f"  Lengths    — mean: {stats[service]['word_lengths']['mean']}, "
+          f"max: {stats[service]['word_lengths']['max']}, "
+          f"p99: {stats[service]['word_lengths']['p99']}")
     print(f"  Vocab size — {len(vocab):,}")
     print(f"  Balance    — train {n_normal_train}N / {n_anomaly_train}A  |  "
           f"test {n_normal_test}N / {n_anomaly_test}A")
@@ -97,6 +94,6 @@ for svc, s in stats.items():
     print(f"{svc:<16} "
           f"{s['total_sequences']:>7} "
           f"{s['train_vocab_size']:>8,} "
-          f"{s['token_lengths']['mean']:>9.1f} "
-          f"{s['token_lengths']['max']:>8}")
+          f"{s['word_lengths']['mean']:>9.1f} "
+          f"{s['word_lengths']['max']:>8}")
 print("="*70)

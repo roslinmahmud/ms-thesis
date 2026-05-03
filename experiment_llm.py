@@ -37,7 +37,7 @@ for service in SERVICES:
         print("  No data — skipping.")
         continue
 
-    train_seqs, test_seqs = split(seqs, method="balanced")
+    train_seqs, test_seqs = split(seqs)
 
     if len(train_seqs) < 5:
         print(f"  Too few training sequences ({len(train_seqs)}) — skipping.")
