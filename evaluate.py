@@ -71,3 +71,13 @@ def save_results(all_results: list, path: str = "results.json"):
     print("\nMacro average:")
     print(df.groupby("model")[["aucroc", "f1"]].mean().round(4).to_string())
     print("="*60)
+
+def length_baseline_aucroc(test_seqs):
+    """
+    Baseline: predicts anomaly score = sequence length only.
+    If this scores high AUCROC, your dataset has a length confound
+    and your other models might be exploiting it.
+    """
+    scores = np.array([len(s["text"]) for s in test_seqs])
+    labels = np.array([s["label"] for s in test_seqs])
+    return roc_auc_score(labels, scores)
