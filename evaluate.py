@@ -40,7 +40,7 @@ def evaluate(scores: np.ndarray, labels: np.ndarray,
         "aucroc":    round(aucroc, 4),
         "f1":        round(best_f1, 4),
         "threshold": round(float(best_t), 4),
-        "flipped":   flipped,          # log this for thesis transparency
+        "flipped":   flipped,
         "n_test":    int(len(labels)),
         "n_anomaly": int(labels.sum()),
     }

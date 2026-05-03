@@ -1,14 +1,5 @@
 # experiment_baselines.py
 # ──────────────────────────────────────────────────────────────────────────────
-# Isolation Forest + LogBERT baselines for all services on LO2 v1.
-# CPU-only — no GPU needed. Run in a separate SLURM job from experiment_llm.py.
-#
-# Usage:
-#   python experiment_baselines.py
-#
-# SLURM recommended resources:
-#   --partition=small  --cpus-per-task=8  --mem=64G  --time=24:00:00
-# ──────────────────────────────────────────────────────────────────────────────
 
 import json
 import time
@@ -58,7 +49,10 @@ for service in SERVICES:
     print(f"\n  [2/3] Isolation Forest...")
     t0 = time.time()
     if_results = run_if_all_representations(train_seqs, test_seqs, service)
+    if_time = round((time.time() - t0) / 3600, 2)
     for r in if_results:
+        r["n_train"] = len(train_seqs)
+        r["service_time_hrs"] = if_time
         RESULTS.append(r)
     save_checkpoint(RESULTS)
     print(f"  IF complete in {elapsed(t0)}")
@@ -76,6 +70,7 @@ for service in SERVICES:
             service=service
         )
         if lb_result:
+            lb_result["n_train"] = len(train_seqs)
             lb_result["service_time_hrs"] = round(
                 (time.time() - service_start) / 3600, 2
             )
@@ -102,14 +97,41 @@ if RESULTS:
     summary = df.groupby("model")[["aucroc", "f1"]].mean().round(4)
     print(summary.to_string())
 
-    print("\nFull results per service:")
-    pivot = df.pivot_table(
+    print("\nAUCROC per service:")
+    pivot_auc = df.pivot_table(
         index="service",
         columns="model",
         values="aucroc",
         aggfunc="first"
     ).round(4)
-    print(pivot.to_string())
+    print(pivot_auc.to_string())
+
+    print("\nF1 per service:")
+    pivot_f1 = df.pivot_table(
+        index="service",
+        columns="model",
+        values="f1",
+        aggfunc="first"
+    ).round(4)
+    print(pivot_f1.to_string())
+
+    print("\nPrecision per service:")
+    pivot_p = df.pivot_table(
+        index="service",
+        columns="model",
+        values="precision",
+        aggfunc="first"
+    ).round(4)
+    print(pivot_p.to_string())
+
+    print("\nRecall per service:")
+    pivot_r = df.pivot_table(
+        index="service",
+        columns="model",
+        values="recall",
+        aggfunc="first"
+    ).round(4)
+    print(pivot_r.to_string())
 
     csv_path = "results_baselines.csv"
     df.to_csv(csv_path, index=False)
