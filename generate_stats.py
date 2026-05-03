@@ -22,7 +22,7 @@ for service in SERVICES:
         print(f"  No sequences found — skipping.")
         continue
 
-    train_seqs, test_seqs = split(seqs, method="balanced")
+    train_seqs, test_seqs = split(seqs)
     all_seqs = train_seqs + test_seqs
 
     # ── Token lengths ──────────────────────────────────────────────────────────
