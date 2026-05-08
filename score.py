@@ -8,7 +8,7 @@ import os
 # Make sure MODEL_ID matches your training notebook!
 MODEL_ID = "meta-llama/Meta-Llama-3-8B"
 MAX_LEN   = 1024
-CKPT_BASE = Path("./checkpoints")
+CKPT_BASE = Path("./checkpoints_skip50")
 
 def load_finetuned(service: str, rank: int = 16):
     ckpt_dir = CKPT_BASE / service / f"r{rank}"

@@ -4,8 +4,8 @@ from dataclasses import dataclass, field
 from typing import List, Optional
 
 # ── Constants matching your dataset spec ──────────────────────────────────────
-DATASET_ROOT  = Path("light-oauth2-logs")
-RUN_PREFIX    = "oauth2_logs_LO2_run_"
+DATASET_ROOT  = Path("lo2-data")
+RUN_PREFIX    = "light-oauth2-data-"
 SERVICES      = ["client", "code", "key", "refresh-token",
                  "service", "token", "user"]
 
@@ -69,18 +69,26 @@ def extract_run_id(run_folder: Path) -> str:
 
 # ── Build sequences ───────────────────────────────────────────────────────────
 def build_sequences(service: str, root: Path = DATASET_ROOT,
-                    max_events: int = 256) -> List[dict]:
+                    max_events: int = 256,
+                    skip_init_events: int = 0) -> List[dict]:
     """
     Returns list of dicts, one per (run, scenario) pair:
       {
-        run_id:     str,
-        scenario:   str,          # exact folder name, case-preserved
-        service:    str,
-        is_normal:  bool,
-        label:      int,          # 0 = normal, 1 = anomaly
-        text:       str,          # joined event texts for the LLM
-        n_events:   int
+        run_id:          str,
+        scenario:        str,   # exact folder name, case-preserved
+        service:         str,
+        is_normal:       bool,
+        label:           int,   # 0 = normal, 1 = anomaly
+        text:            str,   # joined event texts for the LLM
+        n_events:        int,   # total events in the file
+        n_events_used:   int    # events after init skip and cap
       }
+
+    skip_init_events: number of leading events to discard before taking
+    max_events. Initialization rows at the start of a log file differ
+    between correct and error runs (different services initialize, different
+    endpoints are probed first), which leaks label information into the
+    sequence. Skipping them ensures the model sees only operational behavior.
     """
     filename  = log_filename(service)
     sequences = []
@@ -112,18 +120,29 @@ def build_sequences(service: str, root: Path = DATASET_ROOT,
             if not events:
                 continue   # empty log file — skip
 
+            n_total = len(events)
+
+            # Drop initialization events before taking the operational window.
+            # The startup phase encodes label-leaking information (which
+            # components initialize, which endpoints are probed first).
+            operational = events[skip_init_events:]
+            if not operational:
+                continue   # nothing left after skipping init
+
             # Cap events, clean, then join with a separator the LLM can learn
-            clean = [clean_event(e) for e in events[:max_events]]
-            text  = "\n---\n".join(clean)   # \n---\n is clearer than [SEP]
+            window = operational[:max_events]
+            clean  = [clean_event(e) for e in window]
+            text   = "\n---\n".join(clean)   # \n---\n is clearer than [SEP]
 
             sequences.append({
-                "run_id":    run_id,
-                "scenario":  scenario,
-                "service":   service,
-                "is_normal": is_normal,
-                "label":     label,
-                "text":      text,
-                "n_events":  len(events),
+                "run_id":        run_id,
+                "scenario":      scenario,
+                "service":       service,
+                "is_normal":     is_normal,
+                "label":         label,
+                "text":          text,
+                "n_events":      n_total,
+                "n_events_used": len(window),
             })
 
     print(f"[{service}] {len(sequences)} sequences "
@@ -164,8 +183,9 @@ def split(sequences: List[dict], train_ratio: float = 0.5,
 
 # ── Quick sanity check ────────────────────────────────────────────────────────
 if __name__ == "__main__":
+    SKIP_INIT = 50   # tune based on observed startup length in actual logs
     for svc in SERVICES:
-        seqs = build_sequences(svc)
+        seqs = build_sequences(svc, skip_init_events=SKIP_INIT)
         train, test = split(seqs)
         # Print a sample to verify parsing looks correct
         sample = train[0]

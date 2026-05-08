@@ -15,7 +15,7 @@ set_seed(42)
 
 # ── Config — tweak these per experiment ───────────────────────────────────────
 MODEL_ID      = "meta-llama/Meta-Llama-3-8B"
-CKPT_BASE     = Path("./checkpoints")
+CKPT_BASE     = Path("./checkpoints_skip50")
 MAX_LEN       = 1024   # tokens; reduce to 512 if you hit OOM
 LORA_RANK     = 16     # ablate: 4, 8, 16, 32
 LORA_ALPHA    = 32     # rule of thumb: 2 × rank
