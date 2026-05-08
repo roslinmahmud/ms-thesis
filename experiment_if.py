@@ -1,17 +1,14 @@
-# experiment_baselines.py
+# experiment_if.py
 # ──────────────────────────────────────────────────────────────────────────────
 
 import json
 import time
-import torch
 
 from preprocessing import build_sequences, split, SERVICES
 from baseline_if import run_if_all_representations
-from baseline_logbert import fine_tune_logbert, score_all_logbert
-from evaluate import evaluate
 
 # ── Config ────────────────────────────────────────────────────────────────────
-RESULTS_FILE     = "results_baselines_skip50.json"
+RESULTS_FILE     = "results_if_skip50.json"
 RESULTS          = []
 EXPERIMENT_START = time.time()
 
@@ -32,8 +29,7 @@ for service in SERVICES:
     print(f"  Experiment elapsed: {elapsed(EXPERIMENT_START)}")
     print(f"{'='*60}")
 
-    # ── 1. Build sequences ────────────────────────────────────────────────────
-    print(f"\n  [1/3] Building sequences...")
+    print(f"\n  [1/2] Building sequences...")
     t0 = time.time()
     seqs = build_sequences(service, skip_init_events=50)
 
@@ -45,8 +41,7 @@ for service in SERVICES:
     print(f"  Built in {elapsed(t0)} | "
           f"train={len(train_seqs)} | test={len(test_seqs)}")
 
-    # ── 2. Isolation Forest — all three representations ───────────────────────
-    print(f"\n  [2/3] Isolation Forest...")
+    print(f"\n  [2/2] Isolation Forest...")
     t0 = time.time()
     if_results = run_if_all_representations(train_seqs, test_seqs, service)
     if_time = round((time.time() - t0) / 3600, 2)
@@ -57,35 +52,11 @@ for service in SERVICES:
     save_checkpoint(RESULTS)
     print(f"  IF complete in {elapsed(t0)}")
 
-    # ── 3. LogBERT ───────────────────────────────────────────────────────────
-    print(f"\n  [3/3] LogBERT...")
-    t0 = time.time()
-
-    try:
-        fine_tune_logbert(service, train_seqs)
-        lb_scores, lb_labels = score_all_logbert(test_seqs, service)
-        lb_result = evaluate(
-            lb_scores, lb_labels,
-            model_name="logbert",
-            service=service
-        )
-        if lb_result:
-            lb_result["n_train"] = len(train_seqs)
-            lb_result["service_time_hrs"] = round(
-                (time.time() - service_start) / 3600, 2
-            )
-            RESULTS.append(lb_result)
-            save_checkpoint(RESULTS)
-        torch.cuda.empty_cache()
-    except Exception as e:
-        print(f"  ⚠  LogBERT failed for {service}: {e}")
-        print(f"  Continuing with next service...")
-
     print(f"\n  Service '{service}' complete in {elapsed(service_start)}")
 
 # ── Final summary ─────────────────────────────────────────────────────────────
 print(f"\n\n{'='*60}")
-print(f"  BASELINES COMPLETE")
+print(f"  ISOLATION FOREST COMPLETE")
 print(f"  Total time: {elapsed(EXPERIMENT_START)}")
 print(f"{'='*60}\n")
 
@@ -93,7 +64,7 @@ if RESULTS:
     import pandas as pd
     df = pd.DataFrame(RESULTS)
 
-    print("Results by model:")
+    print("Results by representation:")
     summary = df.groupby("model")[["aucroc", "f1"]].mean().round(4)
     print(summary.to_string())
 
@@ -115,25 +86,7 @@ if RESULTS:
     ).round(4)
     print(pivot_f1.to_string())
 
-    print("\nPrecision per service:")
-    pivot_p = df.pivot_table(
-        index="service",
-        columns="model",
-        values="precision",
-        aggfunc="first"
-    ).round(4)
-    print(pivot_p.to_string())
-
-    print("\nRecall per service:")
-    pivot_r = df.pivot_table(
-        index="service",
-        columns="model",
-        values="recall",
-        aggfunc="first"
-    ).round(4)
-    print(pivot_r.to_string())
-
-    csv_path = "results_baselines_skip50.csv"
+    csv_path = "results_if_skip50.csv"
     df.to_csv(csv_path, index=False)
     print(f"\nFinal results saved → {csv_path}")
 else:
