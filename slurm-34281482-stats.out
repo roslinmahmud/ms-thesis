@@ -1,0 +1,27 @@
+Job started: Mon May  4 13:03:29 EEST 2026
+CPUs available: 8
+Workers: 8  |  Services: 7
+
+Processing: key
+[key] 67784 sequences (1260 normal, 66524 anomalous)
+  Train (normal only): 630
+  Test  (mixed):       1260  (630 normal, 630 anomalous)
+  Sequences  — train: 630, test: 1260
+  Lengths    — mean: 585.6, max: 1031, p99: 941.1
+  Vocab size — 52,050
+  Balance    — train 630N / 0A  |  test 630N / 630A
+
+Saved → stats_4_4.json
+
+======================================================================
+Service            Total    Vocab   MeanLen   MaxLen
+======================================================================
+client              1890   46,317    9295.5    13729
+code                1890   26,356   13616.7    22338
+key                 1890   52,050     585.6     1031
+refresh-token       1890   47,507   16775.4    29331
+service             1890   38,275    8755.4    13546
+token               1889   36,732   16083.0    27266
+user                1890   43,356    7322.8    12342
+======================================================================
+Job finished: Mon May  4 15:34:30 EEST 2026
