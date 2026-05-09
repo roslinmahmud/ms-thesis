@@ -6,7 +6,6 @@ import time
 import torch
 
 from preprocessing import build_sequences, split, SERVICES
-from baseline_if import run_if_all_representations
 from baseline_logbert import fine_tune_logbert, score_all_logbert
 from evaluate import evaluate
 
@@ -33,7 +32,7 @@ for service in SERVICES:
     print(f"{'='*60}")
 
     # ── 1. Build sequences ────────────────────────────────────────────────────
-    print(f"\n  [1/3] Building sequences...")
+    print(f"\n  [1/2] Building sequences...")
     t0 = time.time()
     seqs = build_sequences(service, skip_init_events=50)
 
@@ -45,20 +44,17 @@ for service in SERVICES:
     print(f"  Built in {elapsed(t0)} | "
           f"train={len(train_seqs)} | test={len(test_seqs)}")
 
-    # ── 2. Isolation Forest — all three representations ───────────────────────
-    print(f"\n  [2/3] Isolation Forest...")
-    t0 = time.time()
-    if_results = run_if_all_representations(train_seqs, test_seqs, service)
-    if_time = round((time.time() - t0) / 3600, 2)
-    for r in if_results:
-        r["n_train"] = len(train_seqs)
-        r["service_time_hrs"] = if_time
-        RESULTS.append(r)
-    save_checkpoint(RESULTS)
-    print(f"  IF complete in {elapsed(t0)}")
+    # ── 2. Isolation Forest — moved to experiment_if.py (runs on CPU) ──────────
+    # if_results = run_if_all_representations(train_seqs, test_seqs, service)
+    # if_time = round((time.time() - t0) / 3600, 2)
+    # for r in if_results:
+    #     r["n_train"] = len(train_seqs)
+    #     r["service_time_hrs"] = if_time
+    #     RESULTS.append(r)
+    # save_checkpoint(RESULTS)
 
-    # ── 3. LogBERT ───────────────────────────────────────────────────────────
-    print(f"\n  [3/3] LogBERT...")
+    # ── 2. LogBERT ───────────────────────────────────────────────────────────
+    print(f"\n  [2/2] LogBERT...")
     t0 = time.time()
 
     try:
