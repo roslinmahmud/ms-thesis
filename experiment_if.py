@@ -2,6 +2,7 @@
 # ──────────────────────────────────────────────────────────────────────────────
 
 import json
+import os
 import time
 
 from preprocessing import build_sequences, split, SERVICES
@@ -9,8 +10,17 @@ from baseline_if import run_if_all_representations
 
 # ── Config ────────────────────────────────────────────────────────────────────
 RESULTS_FILE     = "results_if_skip50.json"
-RESULTS          = []
 EXPERIMENT_START = time.time()
+
+# ── Resume: load existing results and find already-completed services ─────────
+if os.path.exists(RESULTS_FILE):
+    with open(RESULTS_FILE) as f:
+        RESULTS = json.load(f)
+    DONE_SERVICES = {r["service"] for r in RESULTS}
+    print(f"  Resuming — {len(DONE_SERVICES)} services already done: {sorted(DONE_SERVICES)}")
+else:
+    RESULTS = []
+    DONE_SERVICES = set()
 
 def elapsed(since):
     secs = time.time() - since
@@ -23,6 +33,10 @@ def save_checkpoint(results, path=RESULTS_FILE):
 
 # ── Main loop ─────────────────────────────────────────────────────────────────
 for service in SERVICES:
+    if service in DONE_SERVICES:
+        print(f"  Skipping '{service}' — already in results.")
+        continue
+
     service_start = time.time()
     print(f"\n{'='*60}")
     print(f"  Service: {service}")
